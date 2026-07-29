@@ -1,0 +1,8 @@
+.cache/
+.bin/
+.DS_Store
+.venv/
+__pycache__/
+*.pyc
+NOTES.md
+AGENTS.md

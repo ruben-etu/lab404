@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Create a poll · Lab 404{% endblock %}
+{% block content %}
+  <section class="card">
+    <h1>Create a poll</h1>
+    <form method="post" action="/polls">
+      <label for="question">Question</label>
+      <input id="question" name="question" maxlength="200" required>
+      {% for number in range(1, 5) %}
+        <label for="choice-{{ number }}">Choice {{ number }}</label>
+        <input id="choice-{{ number }}" name="choices" maxlength="80" {% if number < 3 %}required{% endif %}>
+      {% endfor %}
+      <button type="submit">Create shareable poll</button>
+    </form>
+  </section>
+{% endblock %}
+

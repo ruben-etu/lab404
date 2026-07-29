@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ poll.question }} · Lab 404{% endblock %}
+{% block content %}
+  <section class="card">
+    <h1>{{ poll.question }}</h1>
+    <form method="post" action="/polls/{{ poll.id }}/votes">
+      {% for choice in poll.choices %}
+        <label class="choice">
+          <input type="radio" name="choice" value="{{ loop.index0 }}" required>
+          <span>{{ choice.label }}</span>
+        </label>
+      {% endfor %}
+      <button type="submit">Vote</button>
+    </form>
+  </section>
+  <section class="card">
+    <h2>Results · {{ poll.total_votes }} vote{{ "s" if poll.total_votes != 1 }}</h2>
+    {% for choice in poll.choices %}
+      <strong>{{ choice.label }} — {{ choice.votes }}</strong>
+      <div class="bar" style="width: {{ (100 * choice.votes / poll.total_votes) if poll.total_votes else 0 }}%">
+        {{ ((100 * choice.votes / poll.total_votes) if poll.total_votes else 0)|round|int }}%
+      </div>
+    {% endfor %}
+    <p class="muted">Share: <code>{{ share_url }}</code></p>
+  </section>
+{% endblock %}

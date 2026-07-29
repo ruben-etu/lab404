@@ -1,0 +1,55 @@
+mode: deployment
+fullnameOverride: otel-collector
+
+image:
+  repository: otel/opentelemetry-collector-k8s
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
+
+config:
+  exporters:
+    debug:
+      verbosity: detailed
+  processors:
+    batch: {}
+    memory_limiter:
+      check_interval: 5s
+      limit_percentage: 80
+      spike_limit_percentage: 25
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: ${env:MY_POD_IP}:4317
+        http:
+          endpoint: ${env:MY_POD_IP}:4318
+  service:
+    pipelines:
+      logs:
+        exporters: [debug]
+        processors: [memory_limiter, batch]
+        receivers: [otlp]
+      metrics:
+        exporters: [debug]
+        processors: [memory_limiter, batch]
+        receivers: [otlp]
+      traces:
+        exporters: [debug]
+        processors: [memory_limiter, batch]
+        receivers: [otlp]
+
+ports:
+  jaeger-compact:
+    enabled: false
+  jaeger-grpc:
+    enabled: false
+  jaeger-thrift:
+    enabled: false
+  zipkin:
+    enabled: false

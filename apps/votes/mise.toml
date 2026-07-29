@@ -1,0 +1,6 @@
+[tools]
+go = "1.26.8"
+
+[tasks.test]
+description = "Run votes tests"
+run = "go test ./..."

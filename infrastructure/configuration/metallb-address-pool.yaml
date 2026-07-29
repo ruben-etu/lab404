@@ -1,0 +1,17 @@
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: lab404
+  namespace: metallb-system
+spec:
+  addresses:
+    - 172.28.255.200-172.28.255.250
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: lab404
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - lab404

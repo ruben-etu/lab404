@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Poll dashboard · Lab 404{% endblock %}
+{% block content %}
+  <h1>Poll dashboard</h1>
+  {% for poll in polls %}
+    <article class="card">
+      <h2><a href="/polls/{{ poll.id }}">{{ poll.question }}</a></h2>
+      <p>{{ poll.total_votes }} votes · {{ poll.choices|length }} choices</p>
+    </article>
+  {% else %}
+    <section class="card"><p>No polls yet. <a href="/">Create the first one.</a></p></section>
+  {% endfor %}
+{% endblock %}
+

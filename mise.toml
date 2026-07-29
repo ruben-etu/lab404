@@ -1,0 +1,27 @@
+[tools]
+helm = "4.2.2"
+kind = "0.32.0"
+kubectl = "1.35.0"
+kustomize = "5.8.1"
+
+[tasks.check-tools]
+description = "Check required host tools"
+run = '''
+for tool in git docker kind kubectl helm kustomize; do
+  command -v "$tool" >/dev/null || { echo "missing: $tool"; exit 1; }
+done
+echo "Required tools are available."
+'''
+
+[tasks.test-go]
+description = "Run votes tests"
+run = "mise -C apps/votes run test"
+
+[tasks.test-web]
+description = "Run web tests"
+dir = "apps/web"
+run = ".venv/bin/python -m unittest -v"
+
+[tasks.test]
+description = "Run all application tests"
+depends = ["test-go", "test-web"]

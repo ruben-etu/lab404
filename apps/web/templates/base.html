@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Lab 404 Polls{% endblock %}</title>
+    <style>
+      :root { color-scheme: light; font: 16px/1.5 system-ui, sans-serif; }
+      body { margin: 0; background: #f4f6f8; color: #17202a; }
+      nav, main { max-width: 48rem; margin: auto; padding: 1rem; }
+      nav { display: flex; justify-content: space-between; align-items: center; }
+      nav a { color: #2457d6; text-decoration: none; margin-left: 1rem; }
+      .card { background: white; border-radius: .75rem; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 4px #0002; }
+      label { display: block; font-weight: 600; margin-top: .8rem; }
+      input, button { box-sizing: border-box; font: inherit; width: 100%; padding: .7rem; margin-top: .3rem; }
+      input { border: 1px solid #bbc2cc; border-radius: .4rem; }
+      button { border: 0; border-radius: .4rem; background: #2457d6; color: white; cursor: pointer; margin-top: 1rem; }
+      .choice { display: flex; gap: .7rem; align-items: center; margin: .7rem 0; }
+      .choice input { width: auto; margin: 0; }
+      .bar { background: #dce5ff; border-radius: .3rem; padding: .4rem; margin: .3rem 0 .8rem; }
+      .muted { color: #5f6b7a; }
+      code { overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <strong>Lab 404 Polls</strong>
+      <span><a href="/">Create</a><a href="/polls">Dashboard</a></span>
+    </nav>
+    <main>{% block content %}{% endblock %}</main>
+  </body>
+</html>
+
