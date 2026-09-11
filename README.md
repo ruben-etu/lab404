@@ -29,7 +29,7 @@ dashboard of current results.
 3. Make the generated `lab404-web` and `lab404-votes` GHCR packages public.
 4. Clone your fork.
 5. Inspect `mise.toml`, then run `mise trust` and `mise install`.
-6. Follow [the local platform instructions](infrastructure/README.md).
+6. Follow the [student lab guide](LAB.md).
 
 The initial deployment is intentionally insecure. Do not use it as a production
 reference.
