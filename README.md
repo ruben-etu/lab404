@@ -31,5 +31,9 @@ dashboard of current results.
 5. Inspect `mise.toml`, then run `mise trust` and `mise install`.
 6. Follow the [student lab guide](LAB.md).
 
+To update web dependencies, change the pinned direct dependencies in
+`apps/web/requirements.txt` as needed, then run
+`mise run update-web-dependencies`.
+
 The initial deployment is intentionally insecure. Do not use it as a production
 reference.

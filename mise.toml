@@ -3,6 +3,7 @@ helm = "4.2.2"
 kind = "0.32.0"
 kubectl = "1.35.0"
 kustomize = "5.8.1"
+uv = "0.11.7"
 
 [tasks.check-tools]
 description = "Check required host tools"
@@ -21,6 +22,10 @@ run = "mise -C apps/votes run test"
 description = "Run web tests"
 dir = "apps/web"
 run = ".venv/bin/python -m unittest -v"
+
+[tasks.update-web-dependencies]
+description = "Update the web dependency lock with hashes"
+run = "uv pip compile apps/web/requirements.txt --python-version 3.14 --generate-hashes --upgrade --output-file apps/web/requirements.lock"
 
 [tasks.test]
 description = "Run all application tests"
