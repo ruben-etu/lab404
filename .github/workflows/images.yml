@@ -13,8 +13,32 @@ permissions:
   packages: write
 
 jobs:
+  hadolint:
+    name: Lint ${{ matrix.service }} Dockerfile
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [web, votes]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Run Hadolint
+        uses: hadolint/hadolint-action@v3.5.0
+        with:
+          dockerfile: apps/${{ matrix.service }}/Dockerfile
+          output-file: hadolint-${{ matrix.service }}.txt
+      - name: Preserve lint evidence
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: evidence-hadolint-${{ matrix.service }}
+          path: hadolint-${{ matrix.service }}.txt
+          if-no-files-found: warn
+          retention-days: 1
+
   build:
-    name: Build ${{ matrix.service }} for ${{ matrix.arch }}
+    name: Build ${{ matrix.service }} for ${{ matrix.target.arch }}
+    needs: hadolint
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -25,84 +49,181 @@ jobs:
             arch: amd64
           - platform: linux/arm64
             arch: arm64
-
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-
-      - uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
-
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
-
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      - uses: actions/checkout@v7.0.1
+      - uses: docker/setup-qemu-action@v4.4.0
+      - uses: docker/setup-buildx-action@v4.4.1
+      - uses: docker/login-action@v4.7.0
+        with:
+          registry: dhi.io
+          username: ${{ secrets.DHI_USERNAME }}
+          password: ${{ secrets.DHI_TOKEN }}
+      - uses: docker/login-action@v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - id: image
         name: Set image name
         env:
           OWNER: ${{ github.repository_owner }}
         run: echo "name=ghcr.io/${OWNER,,}/lab404-${{ matrix.service }}" >> "$GITHUB_OUTPUT"
-
       - id: build
         name: Build and push by digest
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@v7.4.0
         with:
           context: apps/${{ matrix.service }}
           platforms: ${{ matrix.target.platform }}
+          provenance: false # Do not generate an OCI index, just the image 
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           outputs: type=image,name=${{ steps.image.outputs.name }},push-by-digest=true,name-canonical=true,push=true
-
       - name: Export digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           mkdir -p /tmp/digests
-          digest="${{ steps.build.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
-
-      - name: Upload digest
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+          echo "$DIGEST" > /tmp/digests/digest.txt
+      - uses: actions/upload-artifact@v7.0.2
         with:
-          name: digests-${{ matrix.service }}-${{ matrix.target.arch }}
-          path: /tmp/digests/*
+          name: digest-${{ matrix.service }}-${{ matrix.target.arch }}
+          path: /tmp/digests/digest.txt
           if-no-files-found: error
           retention-days: 1
 
-  merge:
-    name: Publish ${{ matrix.service }} index
+  trivy:
+    name: Trivy ${{ matrix.service }} for ${{ matrix.arch }}
     needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [web, votes]
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: digest-${{ matrix.service }}-${{ matrix.arch }}
+          path: /tmp/digest
+      - id: image
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: echo "ref=ghcr.io/${OWNER,,}/lab404-${{ matrix.service }}@$(cat /tmp/digest/digest.txt)" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Scan vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ steps.image.outputs.ref }}
+          format: json
+          output: trivy-${{ matrix.service }}-${{ matrix.arch }}.json
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+      - name: Generate SBOM
+        if: success() || failure()
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ steps.image.outputs.ref }}
+          format: cyclonedx
+          output: sbom-${{ matrix.service }}-${{ matrix.arch }}.json
+          skip-setup-trivy: true
+      - name: Preserve scan evidence
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: evidence-trivy-${{ matrix.service }}-${{ matrix.arch }}
+          path: |
+            trivy-${{ matrix.service }}-${{ matrix.arch }}.json
+            sbom-${{ matrix.service }}-${{ matrix.arch }}.json
+          if-no-files-found: warn
+          retention-days: 1
+
+  dockle:
+    name: Dockle ${{ matrix.service }} for ${{ matrix.arch }}
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [web, votes]
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: digest-${{ matrix.service }}-${{ matrix.arch }}
+          path: /tmp/digest
+      - id: image
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: echo "ref=ghcr.io/${OWNER,,}/lab404-${{ matrix.service }}@$(cat /tmp/digest/digest.txt)" >> "$GITHUB_OUTPUT"
+      - name: Scan image configuration
+        uses: goodwithtech/dockle-action@v0.4.15
+        with:
+          image: ${{ steps.image.outputs.ref }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          format: json
+          output: dockle-${{ matrix.service }}-${{ matrix.arch }}.json
+          exit-code: '1'
+          exit-level: warn
+      - name: Preserve scan evidence
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: evidence-dockle-${{ matrix.service }}-${{ matrix.arch }}
+          path: dockle-${{ matrix.service }}-${{ matrix.arch }}.json
+          if-no-files-found: warn
+          retention-days: 1
+
+  publish:
+    name: Publish ${{ matrix.service }} index
+    needs: [build, trivy, dockle]
     runs-on: ubuntu-latest
     strategy:
       matrix:
         service: [web, votes]
-
     steps:
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@v8.0.2
         with:
-          pattern: digests-${{ matrix.service }}-*
+          pattern: digest-${{ matrix.service }}-*
           path: /tmp/digests
-          merge-multiple: true
-
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
-
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      - uses: docker/setup-buildx-action@v4.4.1
+      - uses: docker/login-action@v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - id: image
-        name: Set image name
+      - name: Create multi-platform index
         env:
           OWNER: ${{ github.repository_owner }}
-        run: echo "name=ghcr.io/${OWNER,,}/lab404-${{ matrix.service }}" >> "$GITHUB_OUTPUT"
-
-      - name: Create multi-platform index
-        working-directory: /tmp/digests
-        env:
-          IMAGE: ${{ steps.image.outputs.name }}
+          SHA: ${{ github.sha }}
+          REF: ${{ github.ref }}
         run: |
-          docker buildx imagetools create \
-            --tag "${IMAGE}:latest" \
-            $(printf "${IMAGE}@sha256:%s " *)
-          docker buildx imagetools inspect "${IMAGE}:latest"
+          image="ghcr.io/${OWNER,,}/lab404-${{ matrix.service }}"
+          tags=(--tag "${image}:sha-${SHA}")
+          if [[ "$REF" == refs/heads/main ]]; then
+            tags+=(--tag "${image}:latest")
+          fi
+          docker buildx imagetools create "${tags[@]}" \
+            "${image}@$(cat /tmp/digests/digest-${{ matrix.service }}-amd64/digest.txt)" \
+            "${image}@$(cat /tmp/digests/digest-${{ matrix.service }}-arm64/digest.txt)"
+          docker buildx imagetools inspect "${image}:sha-${SHA}"
+
+  evidence:
+    name: Upload security evidence
+    needs: [hadolint, build, trivy, dockle, publish]
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: evidence-*
+          path: evidence
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: security-evidence
+          path: evidence
+          if-no-files-found: warn
+          retention-days: 30
