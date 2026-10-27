@@ -3,10 +3,10 @@ kind: Kustomization
 resources:
   - ../../base
 images:
-  - name: ghcr.io/ruben-etu/lab404-web
+  - name: ghcr.io/leofvo/lab404-web
     newName: ghcr.io/ruben-etu/lab404-web
     newTag: latest
-  - name: ghcr.io/ruben-etu/lab404-votes
+  - name: ghcr.io/leofvo/lab404-votes
     newName: ghcr.io/ruben-etu/lab404-votes
     newTag: latest
 
