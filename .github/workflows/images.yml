@@ -168,6 +168,8 @@ jobs:
           output: dockle-${{ matrix.service }}-${{ matrix.arch }}.json
           exit-code: '1'
           exit-level: warn
+          # PATH is a search path; python-3.14 is a package version in DHI history.
+          accept-key: ${{ matrix.service == 'web' && 'PATH,python-3.14' || '' }}
       - name: Preserve scan evidence
         if: always()
         uses: actions/upload-artifact@v7.0.2

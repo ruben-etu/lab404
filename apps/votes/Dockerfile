@@ -1,4 +1,4 @@
-FROM dhi.io/golang:1.26-debian13-dev AS build
+FROM dhi.io/golang:1.26-debian13-dev@sha256:c1e60bfcf708775a036d8777a4a29b6c26f618bbf639a9a6161559c5adda20af AS build
 
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -13,4 +13,3 @@ USER 65532:65532
 
 EXPOSE 8081
 CMD ["/votes"]
-
