@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - metallb-address-pool.yaml
   - envoy-gateway-class.yaml
+  - otel-network-policy.yaml

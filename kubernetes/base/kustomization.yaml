@@ -12,3 +12,4 @@ resources:
   - valkey.yaml
   - gateway.yaml
   - nginx.yaml
+  - network-policies.yaml
