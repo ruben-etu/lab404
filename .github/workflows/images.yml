@@ -211,7 +211,7 @@ jobs:
           docker buildx imagetools create --metadata-file /tmp/index-metadata.json "${tags[@]}" \
             "${image}@$(cat /tmp/digests/digest-${{ matrix.service }}-amd64/digest.txt)" \
             "${image}@$(cat /tmp/digests/digest-${{ matrix.service }}-arm64/digest.txt)"
-          jq -er '."containerimage.digest" | select(test("^sha256:[0-9a-f]{64}$"))' /tmp/index-metadata.json > /tmp/index-digest.txt
+          jq -er '."containerimage.descriptor".digest | select(test("^sha256:[0-9a-f]{64}$"))' /tmp/index-metadata.json > /tmp/index-digest.txt
           docker buildx imagetools inspect "${image}@$(cat /tmp/index-digest.txt)"
       - uses: actions/upload-artifact@v7.0.2
         with:
