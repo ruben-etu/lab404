@@ -1,0 +1,24 @@
+apiVersion: policies.kyverno.io/v1
+kind: NamespacedValidatingPolicy
+metadata:
+  name: require-image-digests
+  namespace: lab404
+spec:
+  failurePolicy: Fail
+  validationActions:
+    - Deny
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods, pods/ephemeralcontainers]
+  variables:
+    - name: images
+      expression: >-
+        object.spec.containers.map(container, parseImageReference(container.image))
+        + object.spec.?initContainers.orValue([]).map(container, parseImageReference(container.image))
+        + object.spec.?ephemeralContainers.orValue([]).map(container, parseImageReference(container.image))
+  validations:
+    - expression: variables.images.all(image, image.containsDigest())
+      message: Container images must use immutable digest references.

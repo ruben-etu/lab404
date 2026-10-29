@@ -1,0 +1,15 @@
+crds:
+  migration:
+    enabled: false
+
+webhooksCleanup:
+  enabled: false
+
+reportsController:
+  rbac:
+    clusterRole:
+      extraResources:
+        - apiGroups:
+            - ""
+          resources:
+            - pods/ephemeralcontainers
