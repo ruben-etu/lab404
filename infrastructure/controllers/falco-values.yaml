@@ -1,0 +1,37 @@
+driver:
+  kind: modern_ebpf
+  modernEbpf:
+    leastPrivileged: true
+
+tty: true
+
+falco:
+  json_output: true
+  # Rules are pinned; configuration changes are applied by rolling out Falco.
+  watch_config_files: false
+  stdout_output:
+    enabled: true
+  syslog_output:
+    enabled: false
+
+falcoctl:
+  artifact:
+    follow:
+      enabled: false
+  config:
+    artifact:
+      install:
+        refs:
+          - ghcr.io/falcosecurity/rules/falco-rules@sha256:213c9bb201088fa23e7fe51e595ce52292ff55fa7a4d43b2628287f92b1d66d0
+
+tolerations:
+  - key: node-role.kubernetes.io/master
+    operator: Exists
+    effect: NoSchedule
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+  - key: workload
+    operator: Equal
+    value: stateful
+    effect: NoSchedule
