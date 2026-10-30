@@ -34,3 +34,11 @@ helmCharts:
     includeCRDs: true
     skipTests: true
     valuesFile: kyverno-values.yaml
+  - name: sealed-secrets
+    repo: https://bitnami.github.io/sealed-secrets
+    version: 2.19.3
+    releaseName: sealed-secrets
+    namespace: sealed-secrets
+    includeCRDs: true
+    skipTests: true
+    valuesFile: sealed-secrets-values.yaml

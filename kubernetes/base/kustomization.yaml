@@ -10,6 +10,7 @@ resources:
   - web.yaml
   - votes.yaml
   - valkey.yaml
+  - valkey-sealed.yaml
   - gateway.yaml
   - nginx.yaml
   - network-policies.yaml
